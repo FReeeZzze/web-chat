@@ -1,0 +1,6 @@
+{
+  "port": 9000,
+  "jwtSecret": "xAr3DJ6QrezDRlydKVEuFk9ZpQ8luOT3",
+  "mongoUri": "mongodb://mongo:27017",
+  "db": "web-chat"
+}

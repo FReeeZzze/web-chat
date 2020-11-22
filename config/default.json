@@ -1,0 +1,6 @@
+{
+  "port": 9000,
+  "jwtSecret": "maxim_web",
+  "mongoUri": "mongodb://localhost:27017",
+  "db": "web-chat"
+}
