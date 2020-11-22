@@ -1,0 +1,6 @@
+[submodule "web-chat"]
+	path = web-chat
+	url = https://github.com/FReeeZzze/web-chat
+[submodule "web-chat-client"]
+	path = web-chat-client
+	url = https://github.com/FReeeZzze/web-chat-client

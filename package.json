@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "server": "ts-node-dev --respawn --project tsconfig.server.json src/server.ts",
-    "client": "npm run start --prefix client",
+    "client": "npm run start --prefix web-chat-client",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "keywords": [
