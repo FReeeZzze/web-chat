@@ -1,10 +1,11 @@
-import socket from 'socket.io';
+import { Server } from "socket.io";
 import http from 'http';
 
 export default (http: http.Server) => {
-  const io = socket(http);
+  const io = new Server(http);
 
-  io.on('connection', function(socket: any) {
+  io.on('connection', (socket: any) => {
+    console.log('user is connected');
     socket.on('DIALOGS:JOIN', (dialogId: string) => {
       socket.dialogId = dialogId;
       socket.join(dialogId);

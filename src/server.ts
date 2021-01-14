@@ -2,8 +2,8 @@ import { createServer } from 'http';
 import express from 'express';
 import mongoose from 'mongoose';
 import config from 'config';
-import createSocket from './core/socket';
 import createRoutes from './routes';
+import createSocket from './core/socket';
 
 const PORT: number = config.get('port') || 5000;
 const DB: string = config.get('db');
@@ -34,7 +34,7 @@ async function startServer(): Promise<void> {
       }
     );
     // запуск сервера
-    app.listen(PORT, (): void => {
+    http.listen(PORT, (): void => {
       console.log(`> Сервер стартовал на http://localhost:${PORT}`);
     });
   }catch(e) {

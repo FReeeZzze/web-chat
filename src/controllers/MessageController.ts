@@ -1,8 +1,6 @@
 import express from 'express';
-import { MessageModel, UserModel } from "../models";
+import { MessageModel, DialogModel } from "../models";
 import socket from "socket.io";
-// import { IDialog }  from "../models/Dialog";
-import { IUser } from "../models/User";
 import { IMessage } from "../models/Message";
 import handleError from "../utils/handle.error";
 
@@ -21,40 +19,79 @@ class MessageController {
     this.io = io;
   }
 
-  async getMessages(req:express.Request, res:express.Response) {
+  getMessages = (req:express.Request, res:express.Response) => {
     try {
-      // при авторизации мы можем обращаться к своему обьекту
-      const me = req.user;
+      const id = req.body.dialog;
+
+      MessageModel.find({ dialog: id }, (err, messages) => {
+        if (err) {
+          return res.status(500).json({
+            status: "error",
+            message: err,
+          });
+        }
+
+        res.status(200).json({
+          result: messages,
+          status: 'success',
+        })
+      });
 
     } catch (e) {
       return handleError(500, e.message, res);
     }
-  }
+  };
 
-  async createMessage(req: express.Request, res: express.Response) {
+  createMessage = async (req: express.Request, res: express.Response) => {
     try {
       const myId: string = req.user.userId;
-      const me: IUser | null = await UserModel.findById(myId);
 
-      if(me) {
-        const postData = {
-          from: me,
-          message: req.body.message
-        };
+      const postData = {
+        dialog: req.body.dialogId,
+        message: req.body.message,
+        attachments: req.body.attachments,
+        from: myId,
+        to: req.body.partner,
+      };
 
-        const newMessage = new MessageModel(postData);
+      const message = new MessageModel(postData);
 
-        await newMessage.save((err, message: IMessage) => {
-          if (err) return handleError(500, err.message, res);
-          return res.status(200).json({
-            result: message,
-            status: 'success',
-          });
+      message
+        .save()
+        .then((obj: IMessage) => {
+          obj.populate(
+            "dialog user attachments",
+            (err: any, message: IMessage) => {
+              if (err) {
+                return res.status(500).json({
+                  status: "error",
+                  message: err,
+                });
+              }
 
-          // this.io.emit('SERVER:MESSAGE_CREATED', message);
+              DialogModel.findOneAndUpdate(
+                { _id: req.body.dialogId },
+                { lastMessage: message._id },
+                { upsert: true },
+                function (err) {
+                  if (err) {
+                    return res.status(500).json({
+                      status: "error",
+                      message: err,
+                    });
+                  }
+                }
+              );
+
+              res.status(200).json({
+                result: message,
+                status: 'success',
+              });
+
+              this.io.emit("SERVER:NEW_MESSAGE", message);
+            }
+          );
         });
-      }
-      else return handleError(500, 'Непредвиденная ошибка', res)
 
     } catch (e) {
       return handleError(500, e.message, res);

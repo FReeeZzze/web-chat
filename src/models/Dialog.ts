@@ -8,7 +8,8 @@ export interface IDialog extends Document {
 const DialogSchema: Schema = new Schema(
   {
     users: [{ type: Types.ObjectId, ref: 'User' }],
-    messages: [{ type: Types.ObjectId, ref: 'Message' }]
+    messages: [{ type: Types.ObjectId, ref: 'Message' }],
+    lastMessage: { type: Types.ObjectId, ref: 'Message'}
   },
   {
     timestamps: true,

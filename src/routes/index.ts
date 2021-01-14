@@ -5,7 +5,9 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 import socket from "socket.io";
 
-import { UserCtrl, HomeCtrl, AuthCtrl, DialogCtrl, MessageCtrl } from "../controllers";
+import uploader from "../core/multer";
+const multiType = uploader.array('fileData', 2);
+import { UserCtrl, HomeCtrl, AuthCtrl, DialogCtrl, MessageCtrl, UploadCtrl } from "../controllers";
 import auth from '../middleware/auth.middleware';
 
 // состояние приложения
@@ -14,18 +16,24 @@ const dev = process.env.NODE_ENV !== 'production';
 // конструктор роутов
 const createRoutes = (app: express.Express, io: socket.Server) => {
   // список контроллеров для роутов
-  const AuthController = new AuthCtrl();
   const HomeController = new HomeCtrl();
+  const AuthController = new AuthCtrl();
   const UserController = new UserCtrl(io);
   const DialogController = new DialogCtrl(io);
   const MessageController = new MessageCtrl(io);
+  const UploadFileController = new UploadCtrl();
 
   // промежуточное ПО
-  app.use(express.json());
-  app.use(logger(dev ? 'dev' : 'production'));
   app.use(bodyParser.json());
+  app.use('/public', express.static('public'));
+  app.use(logger(dev ? 'dev' : 'production'));
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(cookieParser());
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', 'origin, content-type, accept');
+    next();
+  });
 
   /* === запросы для точки '/' контроллера HomeController === */
 
@@ -49,6 +57,9 @@ const createRoutes = (app: express.Express, io: socket.Server) => {
 
   // METHODS 'GET'
   app.get("/api/user/me", auth, UserController.getMe);
+  app.get("/api/user", auth, UserController.findUsers);
+  app.put("/api/user/add", auth, UserController.addContact);
+  app.get("/api/user/contacts", auth, UserController.getContacts);
   app.get("/api/user/all", auth, UserController.getUsers);
 
   /* === запросы для точки '/api/dialog' контроллера DialogController === */
@@ -59,11 +70,22 @@ const createRoutes = (app: express.Express, io: socket.Server) => {
   // METHODS 'GET'
   app.get("/api/dialog", auth, DialogController.getDialogs);
 
+  /* === запросы для точки '/api/message' контроллера MessageController === */
+
   // METHODS 'GET'
-  app.get("/api/message", auth, MessageController.getMessages);
 
   // METHODS 'POST'
+  app.post("/api/messages", auth, MessageController.getMessages);
   app.post("/api/message", auth, MessageController.createMessage);
+
+
+  /* === запросы для точки '/api/files' контроллера MessageController === */
+
+  // METHODS 'POST'
+  app.post("/api/files", [auth, multiType], UploadFileController.create);
+
+  // METHODS 'DELETE'
+  app.delete("/files", UploadFileController.delete);
 };
 
 export default createRoutes;

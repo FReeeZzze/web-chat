@@ -8,6 +8,7 @@ export interface IUser extends Document {
   name: string;
   password: string;
   dialogs: IDialog[];
+  contacts: Array<Types.ObjectId>;
   avatar: string;
   confirmed: boolean;
   confirm_hash: string;
@@ -35,6 +36,7 @@ const UserSchema: Schema = new Schema(
       type: String,
       required: true,
     },
+    contacts: [{ type: Types.ObjectId }],
     dialogs: [{ type: Types.ObjectId, ref: 'Dialog'}],
     avatar: String,
     confirmed: {

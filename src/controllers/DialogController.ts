@@ -1,7 +1,6 @@
 import express from 'express';
 import { UserModel, DialogModel } from "../models";
-import socket from "socket.io";
-// import { IUser } from "../models/User";
+import { Server } from "socket.io";
 import { IDialog }  from "../models/Dialog";
 import handleError from "../utils/handle.error";
 
@@ -14,13 +13,13 @@ declare module 'express-serve-static-core' {
 }
 
 class DialogController {
-  io: socket.Server;
+  io: Server;
 
-  constructor(io: socket.Server) {
+  constructor(io: Server) {
     this.io = io;
   }
 
-  async getDialogs(req:express.Request, res:express.Response) {
+  getDialogs = (req:express.Request, res:express.Response) => {
     try {
       // при авторизации мы можем обращаться к своему обьекту
       const me = req.user;
@@ -40,7 +39,7 @@ class DialogController {
             })
           }
           res.status(200).json({
-            dialogs: dialogsResult,
+            result: dialogsResult,
             status: 'success',
           })
         });
@@ -49,37 +48,40 @@ class DialogController {
     } catch (e) {
       return handleError(500, e.message, res);
     }
-  }
+  };
 
-  async createDialog(req: express.Request, res: express.Response) {
+ createDialog = async (req: express.Request, res: express.Response) => {
     try {
       // при авторизации мы можем обращаться к своему обьекту
       const me = req.user;
       // получаем пользователя с кем мы хотим создать диалог
       const { id_user } = req.body;
+      const postData = {
+        users: [me.userId, id_user],
+        messages: [],
+      };
 
-      const isDialog: IDialog | null = await DialogModel.findOne({ users: [id_user, me.userId] });
+      const isDialog: IDialog | null = await DialogModel.findOne({ users: {$all: [id_user, me.userId] }});
 
-      if(isDialog) {
-        return res.status(409).json({
-          message: 'Такой диалог уже существует',
-          status: 'error'
+      if (isDialog) {
+        this.io.emit("SERVER:CURRENT_DIALOG", isDialog);
+        return res.status(200).json({
+          result: isDialog,
+          status: 'found'
         });
       }
 
-      const dialog = new DialogModel({
-        users: [me.userId, id_user],
-        messages: [],
-      });
+      const dialog = new DialogModel(postData);
 
-      await dialog.save((err, dialog: IDialog) => {
-        if (err) return handleError(500, err.message, res);
+      dialog.save((err, dialog: IDialog) => {
+        if (err)
+          return handleError(500, err.message, res);
         res.status(200).json({
-          dialog: dialog,
-          status: 'success',
+          result: dialog,
+          status: "success"
         });
 
-        // this.io.emit('SERVER:DIALOG_CREATED', dialog);
+        this.io.emit("SERVER:DIALOG_CREATED", dialog);
       });
 
     } catch (e) {
