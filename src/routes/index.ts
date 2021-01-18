@@ -9,6 +9,7 @@ import uploader from "../core/multer";
 const multiType = uploader.array('fileData', 2);
 import { UserCtrl, HomeCtrl, AuthCtrl, DialogCtrl, MessageCtrl, UploadCtrl } from "../controllers";
 import auth from '../middleware/auth.middleware';
+import updateLastSeen from "../middleware/updateLastSeen";
 
 // состояние приложения
 const dev = process.env.NODE_ENV !== 'production';
@@ -56,11 +57,14 @@ const createRoutes = (app: express.Express, io: socket.Server) => {
   /* === запросы для точки '/api/user' контроллера UserController === */
 
   // METHODS 'GET'
-  app.get("/api/user/me", auth, UserController.getMe);
+  app.get("/api/user/me", [auth, updateLastSeen], UserController.getMe);
+  app.get("/api/user/id", auth, UserController.findUserById);
+  app.get("/api/user/me/contacts", auth, UserController.getContacts);
   app.get("/api/user", auth, UserController.findUsers);
-  app.put("/api/user/add", auth, UserController.addContact);
-  app.get("/api/user/contacts", auth, UserController.getContacts);
   app.get("/api/user/all", auth, UserController.getUsers);
+
+  // METHODS 'PUT'
+  app.put("/api/user/add", auth, UserController.addContact);
 
   /* === запросы для точки '/api/dialog' контроллера DialogController === */
 
@@ -73,10 +77,10 @@ const createRoutes = (app: express.Express, io: socket.Server) => {
   /* === запросы для точки '/api/message' контроллера MessageController === */
 
   // METHODS 'GET'
+  app.get("/api/messages", auth, MessageController.getMessages);
 
   // METHODS 'POST'
-  app.post("/api/messages", auth, MessageController.getMessages);
-  app.post("/api/message", auth, MessageController.createMessage);
+  app.post("/api/message",  [auth, updateLastSeen], MessageController.createMessage);
 
 
   /* === запросы для точки '/api/files' контроллера MessageController === */

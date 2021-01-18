@@ -22,7 +22,6 @@ const MessageSchema: Schema = new Schema(
     dialog: { type: Schema.Types.ObjectId, ref: "Dialog", require: true },
     message: {
       type: String,
-      required: true,
     },
     read: {
       type: Boolean,

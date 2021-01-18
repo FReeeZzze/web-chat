@@ -28,7 +28,7 @@ class DialogController {
         .find({
           users: me.userId
         })
-        .populate('User')
+        .populate('User', 'Message')
         .exec(async function (err, dialogs: IDialog[]) {
           if (err) return handleError(500, err.message, res);
           const dialogsResult: IDialog[] = [];
@@ -73,7 +73,7 @@ class DialogController {
 
       const dialog = new DialogModel(postData);
 
-      dialog.save((err, dialog: IDialog) => {
+      await dialog.save((err, dialog: IDialog) => {
         if (err)
           return handleError(500, err.message, res);
         res.status(200).json({

@@ -2,6 +2,7 @@ import multer from 'multer';
 import fs from 'fs-extra';
 
 const createDir = (rootDir, filename, name_of_type, cb) => {
+  // `${rootDir}/${name_of_type}/${filename}`
   const DIR = `${rootDir}/${filename}/${name_of_type}`;
   fs.mkdir(DIR, { recursive: false }, (err) => {
     if (err) {
@@ -13,31 +14,35 @@ const createDir = (rootDir, filename, name_of_type, cb) => {
 };
 
 let filename = '';
+// const rootDir = `${__dirname}\\..\\..\\public\\uploads`;
 const rootDir = 'public/uploads';
 
 const createDestination = (req, file, cb) => {
   try {
     const id = `f${(~~(Math.random() * 1e8)).toString(16)}`;
     filename = file.fieldname + '-' + Date.now() + id;
-
     fs.mkdir(`${rootDir}/${filename}`, { recursive: false }, (err) => {
       if (err) {
         console.log('mkdir-CreateDist: ', err.message);
         throw err;
       }
+      switch (file.mimetype) {
+        case 'audio/mpeg': {
+          createDir(rootDir, filename, 'mpeg', cb);
+          break;
+        }
+        case 'audio/wav': {
+          createDir(rootDir, filename, 'wav', cb);
+          break;
+        }
+        case 'audio/webm': {
+          createDir(rootDir, filename, 'webm', cb);
+          break;
+        }
+        default:
+          cb(null, `${rootDir}/${filename}`);
+      }
     });
-    switch (file.mimetype) {
-      case 'audio/mpeg': {
-        createDir(rootDir, filename, 'mpeg', cb);
-        break;
-      }
-      case 'audio/vnd.wave': {
-        createDir(rootDir, filename, 'wave', cb);
-        break;
-      }
-      default:
-        cb(null, `${rootDir}/${filename}`);
-    }
   } catch (err) {
     console.log('THIS ERR: ', err);
   }
@@ -51,8 +56,9 @@ const storageConfig = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  console.log(file);
-  if (file.mimetype === 'audio/mpeg') {
+  if (file.mimetype === 'audio/mpeg'
+    || file.mimetype === 'audio/wav'
+    || file.mimetype === 'audio/webm') {
     cb(null, true);
   } else {
     cb(null, false);

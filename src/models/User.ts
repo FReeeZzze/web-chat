@@ -3,11 +3,12 @@ import { IDialog } from "./Dialog";
 import { isEmail } from "validator";
 
 export interface IUser extends Document {
+  key: IDialog[];
   username: string;
   email: string;
   name: string;
   password: string;
-  dialogs: IDialog[];
+  dialog: IDialog | null;
   contacts: Array<Types.ObjectId>;
   avatar: string;
   confirmed: boolean;
@@ -37,7 +38,7 @@ const UserSchema: Schema = new Schema(
       required: true,
     },
     contacts: [{ type: Types.ObjectId }],
-    dialogs: [{ type: Types.ObjectId, ref: 'Dialog'}],
+    dialog: { type: Types.ObjectId, ref: 'Dialog' },
     avatar: String,
     confirmed: {
       type: Boolean,

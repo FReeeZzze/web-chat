@@ -19,24 +19,45 @@ class MessageController {
     this.io = io;
   }
 
-  getMessages = (req:express.Request, res:express.Response) => {
+  getMessages = (req: express.Request, res: express.Response) => {
     try {
-      const id = req.body.dialog;
-
-      MessageModel.find({ dialog: id }, (err, messages) => {
-        if (err) {
-          return res.status(500).json({
-            status: "error",
-            message: err,
+      if (req.query && req.query.dialog) {
+        const dialogId = (req.query as any).dialog;
+        MessageModel.find({ dialog: dialogId })
+          .populate(["dialog", "user", "attachments"])
+          .exec(function (err, messages) {
+            if (err) {
+              return res.status(404).json({
+                status: "error",
+                message: "Messages not found",
+              });
+            }
+            res.status(200).json({
+              result: messages,
+              status: 'success',
+            })
           });
-        }
-
-        res.status(200).json({
-          result: messages,
-          status: 'success',
-        })
-      });
-
+      }
+      if (req.query && req.query.user) {
+        const userId = (req.query as any).user;
+        MessageModel.find({ $or: [
+            { 'from': userId },
+            { 'to': userId },
+          ] })
+          .populate(["dialog", "user", "attachments"])
+          .exec(function (err, messages) {
+            if (err) {
+              return res.status(404).json({
+                status: "error",
+                message: "Messages not found",
+              });
+            }
+            res.status(200).json({
+              result: messages,
+              status: 'success',
+            })
+          });
+      }
     } catch (e) {
       return handleError(500, e.message, res);
     }
@@ -60,7 +81,7 @@ class MessageController {
         .save()
         .then((obj: IMessage) => {
           obj.populate(
-            "dialog user attachments",
+            "dialog attachments",
             (err: any, message: IMessage) => {
               if (err) {
                 return res.status(500).json({
@@ -83,12 +104,9 @@ class MessageController {
                 }
               );
 
-              res.status(200).json({
-                result: message,
-                status: 'success',
-              });
+              res.status(200).json(message);
 
-              this.io.emit("SERVER:NEW_MESSAGE", message);
+              this.io.to(req.body.dialogId).emit("SERVER:NEW_MESSAGE", message);
             }
           );
         });

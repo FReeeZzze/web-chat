@@ -30,8 +30,11 @@ class UserController {
             status: 'error'
           });
         }
+        user.contacts.filter((item) => {
+          console.log(item, id);
+        });
 
-        user.contacts = [... user.contacts, id ];
+        user.contacts = [...user.contacts.filter((item) => !item.equals(id)), id ];
 
         user.save(function (err) {
           if(err) {
@@ -43,6 +46,7 @@ class UserController {
         });
 
         return res.status(200).json({
+          result: user,
           status: 'success'
         })
       });
@@ -57,29 +61,35 @@ class UserController {
 
   getContacts = (req: express.Request, res: express.Response) => {
     try {
-      const me = req.user;
+      const me = req.user.userId;
 
       UserModel
         .findOne({
-          _id: me.userId
-        }, async (err, user: IUser) => {
+          _id: me
+        }, (err, user: IUser) => {
           if (err || !user) {
             return res.status(404).json({
-              message: "User not found",
+              message: "Contacts not found",
             });
           }
           const contacts = user.contacts;
-          const myContacts = await UserModel.find({_id: {$in: contacts}}, 'name username avatar email last_seen dialogs').exec();
-          if (!myContacts) {
-            return res.status(404).json({
-              message: "Not found",
-              status: 'bad'
-            });
-          }
-          return res.status(200).json({
-            result: myContacts,
-            status: 'success'
-          })
+          UserModel
+            .find({_id: {$in: contacts }}, 'name username avatar email last_seen dialog')
+            .populate('dialog')
+            .exec(async (err, users: IUser[]) =>{
+              if (err) {
+                return res.status(404).json({
+                  message: "Not found",
+                });
+              }
+              for (const key of users) {
+                key.dialog = await DialogModel.findOne( { users: key._id }).exec()
+              }
+              return res.status(200).json({
+                result: users,
+                status: 'success'
+              })
+          });
         })
     } catch(e) {
       res.status(500).json({
@@ -108,6 +118,26 @@ class UserController {
         error: e.message,
         status: 'error'
       })
+    }
+  };
+
+  findUserById = (req: express.Request, res: express.Response): void => {
+    try {
+      const id = req.query.id;
+      UserModel.findById({ _id: id }, (err, user: IUser) => {
+        if(err || !user) {
+          return res.status(404).json({
+            status: "error",
+            message: err,
+          });
+        }
+        return res.status(200).json({
+          result: user,
+          status: 'success'
+        })
+      })
+    } catch (e) {
+      console.log(e.message);
     }
   };
 
@@ -144,9 +174,9 @@ class UserController {
       const myId: string = req.user.userId;
       UserModel.find({
         _id : { $ne : myId }
-      }).populate('Dialogs').exec(async (err, users) => {
+      }).populate('Dialog').exec(async (err, users: IUser[]) => {
         for ( let key of users ) {
-          key.dialogs = await DialogModel.find({ users: key._id });
+          key.dialog = await DialogModel.findOne({ users: key._id });
         }
         return res.status(200).json({
           result: users,

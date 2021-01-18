@@ -15,19 +15,17 @@ declare module 'express-serve-static-core' {
 class UploadController {
   create = (req: express.Request, res: express.Response): void => {
     const userId: string = req.user.userId;
-    const file: any = req.files;
-
-    console.log(req.file, req.files);
-
-    console.log(file);
-
+    const file: any = req.files[0];
+    console.log(req.query);
     const fileData = {
       filename: file.originalname,
       size: file.size,
-      ext: file.mimetype,
+      ext: file.originalname.split('.').pop(),
       url: file.path,
-      message: req.body.message,
       user: userId,
+      date: req.query.date ?? '',
+      duration: +(req.query.duration ?? ''),
+      timeEnd: req.query.timeend ?? '',
     };
 
     const uploadFile: IUploadFileDocument = new UploadModel(fileData);
@@ -35,13 +33,14 @@ class UploadController {
     uploadFile
       .save()
       .then((fileObj: IUploadFile) => {
-        res.json({
+        console.log(fileObj);
+        res.status(200).json({
           status: "success",
           file: fileObj,
         });
       })
       .catch((err: any) => {
-        res.json({
+        res.status(500).json({
           status: "error",
           message: err,
         });
