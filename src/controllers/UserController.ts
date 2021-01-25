@@ -46,7 +46,6 @@ class UserController {
         });
 
         return res.status(200).json({
-          result: user,
           status: 'success'
         })
       });
@@ -102,7 +101,7 @@ class UserController {
   getMe = async (req: express.Request, res: express.Response) => {
     try {
       const myId: string = req.user.userId;
-      const user = await UserModel.findById(myId,  'contacts dialogs email _id name last_seen username').exec();
+      const user = await UserModel.findById(myId,  'contacts dialogs email _id name last_seen username avatar').exec();
       if (!user) {
         return res.status(404).json({
           message: "User not found",

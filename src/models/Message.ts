@@ -1,4 +1,5 @@
 import { Schema, Document, model, Types } from "mongoose";
+import moment from "moment-timezone";
 
 export interface IMessage extends Document {
   from: string;
@@ -7,6 +8,8 @@ export interface IMessage extends Document {
   message: string;
   read: boolean;
   attachments: Array<Schema.Types.ObjectId>;
+  updatedAt: Date;
+  createdAt: Date;
 }
 
 const MessageSchema: Schema = new Schema(
@@ -28,11 +31,23 @@ const MessageSchema: Schema = new Schema(
       default: false,
     },
     attachments: [{ type: Schema.Types.ObjectId, ref: "UploadFile" }],
+    createdAt: {
+      type: Date,
+    },
+    updatedAt: {
+      type: Date,
+    }
   },
-  {
-    timestamps: true,
-  }
 );
+
+MessageSchema.pre<IMessage>('save', function (next) {
+  const dateKiev = moment.tz(Date.now(), "Europe/Kiev").toDate();
+  this.updatedAt = dateKiev;
+  if ( !this.createdAt ) {
+    this.createdAt = dateKiev;
+  }
+  next();
+});
 
 const MessageModel = model<IMessage>("Message", MessageSchema);
 

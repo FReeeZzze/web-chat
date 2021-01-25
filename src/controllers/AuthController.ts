@@ -32,7 +32,22 @@ class AuthController {
 
       const hashedPassword = await bcrypt.hash(password, 12);
 
-      const user = new UserModel({ email, name, password: hashedPassword });
+      const avatarColor = () => {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i += 1) {
+          color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+      };
+
+      const user = new UserModel({
+        email,
+        name,
+        password: hashedPassword,
+        avatar: avatarColor(),
+        username: `@${name}_${Math.floor (Math.random () * 90000) + 10000}`
+      });
 
       await user.save((err, user) => {
         if(err) return handleError(500, err.message, res);

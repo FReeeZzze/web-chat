@@ -1,6 +1,7 @@
 import { Schema, Document, model, Types } from "mongoose";
 import { IDialog } from "./Dialog";
 import { isEmail } from "validator";
+import moment from "moment-timezone";
 
 export interface IUser extends Document {
   key: IDialog[];
@@ -15,6 +16,8 @@ export interface IUser extends Document {
   confirm_hash: string;
   last_seen: Date;
   data?: IUser;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const UserSchema: Schema = new Schema(
@@ -47,17 +50,23 @@ const UserSchema: Schema = new Schema(
     confirm_hash: String,
     last_seen: {
       type: Date,
-      default: Date.now,
     },
-  },
-  {
-    timestamps: true,
+    createdAt: {
+      type: Date,
+    },
+    updatedAt: {
+      type: Date,
+    }
   }
 );
 
-// Для задания начального USERNAME, которое потом пользователь сможет поменять
 UserSchema.pre<IUser>('save', function (next) {
-  this.username = `@${this.get('name')}_${Math.floor (Math.random () * 90000) + 10000}`;
+  const dateKiev = moment.tz(Date.now(), "Europe/Kiev").toDate();
+  this.updatedAt = dateKiev;
+  this.last_seen = dateKiev;
+  if ( !this.createdAt ) {
+    this.createdAt = dateKiev;
+  }
   next();
 });
 
